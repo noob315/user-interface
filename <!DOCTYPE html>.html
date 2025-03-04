@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino ThingSpeak Control</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #response { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Arduino ThingSpeak Control</h1>
+    <button onclick="writeData()">Write Random Data</button>
+    <div id="response"></div>
+
+    <script>
+        function writeData() {
+            fetch('/writeData', { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('response').innerText = data;
+                });
+        }
+    </script>
+</body>
+</html>
