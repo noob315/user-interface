@@ -3,25 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arduino ThingSpeak Control</title>
+    <title>ThingSpeak Data Reader</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        #response { margin-top: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        #data {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 5px;
+            width: 300px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
-    <h1>Arduino ThingSpeak Control</h1>
-    <button onclick="writeData()">Write Random Data</button>
-    <div id="response"></div>
 
+    <h1>Read Data from ThingSpeak</h1>
+    <button id="fetchData">Fetch Data</button>
+    <div id="data">No data fetched yet.</div>
+    <br>
+    <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/2843061/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=60&type=line&update=15"></iframe>
     <script>
-        function writeData() {
-            fetch('/writeData', { method: 'POST' })
-                .then(response => response.text())
+        document.getElementById('fetchData').addEventListener('click', function() {
+            const apiKey = '9SF7LP76OOJNHX9Z'; // Replace with your ThingSpeak Read API Key
+            const channelID = '2843061'; // Replace with your ThingSpeak Channel ID
+            const url = `https://api.thingspeak.com/channels/2843061/feeds.json?results=1`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
-                    document.getElementById('response').innerText = data;
+                    const feed = data.feeds[0];
+                    const result = feed ? `Field 1: ${feed.field1}, Field 2: ${feed.field2}` : 'No data available';
+                    document.getElementById('data').innerText = result;
+                    fetch('/execute')
+                        .then(response => response.text())
+                        .then(message => {
+                    console.log(message); // Log Arduino response
                 });
-        }
+                })
+                .catch(error => {
+                    document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
+                });
+        });
     </script>
+
 </body>
 </html>
