@@ -1,77 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ThingSpeak Data Reader</title>
+    <title>Energy Input</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f4f4f4;
         }
-        #data {
-            margin-top: 20px;
+
+        .container {
+            max-width: 520px;
+            margin: auto;
+            background: rgb(255, 255, 255);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar {
+            width: 100%;
+            background-color: #007bff;
             padding: 10px;
-            border: 1px solid #ccc;
-            background-color: #fff;
+            display: flex;
+            justify-content: center;
             border-radius: 5px;
-            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .navbar button {
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 15px;
+            margin: 0 10px;
+            cursor: pointer;
+        }
+
+        .navbar button:hover {
+            background-color: #0056b3;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .data {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 5px 0;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .btn-confirm {
+            background: #28a745;
+        }
+
+        .btn-confirm:hover {
+            background-color: #218838;
+        }
+
+        .btn-confirm:disabled {
+            background: #ccc;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        input[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        /* Added styles for the data section */
+        .section {
+            display: none;
+            width: 100%;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            margin-top: 0;
+            color: #333;
             text-align: center;
         }
-        button {
-            padding: 10px 15px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 5px;
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
         }
     </style>
 </head>
+
 <body>
+    <div class="navbar">
+        <button onclick="showSection('home')">Home</button>
+        <button onclick="showSection('data')">Data</button>
+    </div>
 
-    <h1>Read Data from ThingSpeak</h1>
-    <button id="fetchData">Fetch Data</button>
-    <div id="data">No data fetched yet.</div>
-    <br>
-    <iframe width="450" height="260" style="border: 1px solid #cccccc;" src="https://thingspeak.com/channels/2843061/charts/1?bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=60&type=line&update=15"></iframe>
+    <!-- Home page -->
+    <div id="home" class="section active">
+        <div class="container">
+            <h1>Energy Charging Monitor</h1>
+
+            <div class="data">
+                <div><span class="label">Balance:</span> HK$ <span id="balance">0.00</span></div>
+                <div><span class="label">Predicted price:</span> HK$ <span id="predictedPrice">0.00</span></div>
+                <div id="balanceError" class="error-message" style="display: none;">Insufficient balance for this transaction</div>
+            </div>
+
+            <form id="buyEnergyForm">
+                <label for="Buy">Buy Energy (%):</label>
+                <input type="number" id="Buy" min="0" placeholder="e.g. 50" />
+                <div class="action-buttons">
+                    <button type="button" class="btn" onclick="calculateBuyPrice()">Calculate Price</button>
+                    <button type="button" id="confirmBuyBtn" class="btn btn-confirm" onclick="confirmBuyEnergy()" disabled>Confirm Buy</button>
+                </div>
+            </form>
+
+            <form id="sellEnergyForm">
+                <label for="Sell">Sell Energy (%):</label>
+                <input type="number" id="Sell" min="1" placeholder="e.g. 50" />
+                <div class="action-buttons">
+                    <button type="button" class="btn" onclick="calculateSellPrice()">Calculate Price</button>
+                    <button type="button" id="confirmSellBtn" class="btn btn-confirm" onclick="confirmSellEnergy()" disabled>Confirm Sell</button>
+                </div>
+            </form>
+
+            <div>
+                <label for="deposit">Deposit Money (HK$):</label>
+                <input type="number" id="deposit" min="1" placeholder="Enter amount" />
+                <button type="button" class="btn" onclick="depositMoney()">Deposit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data page -->
+    <div id="data" class="section">
+        <div class="container">
+            <h1>Energy Data Visualization</h1>
+
+            <div class="chart-container">
+                <h3>Energy Consumption</h3>
+                <iframe width="100%" height="260" style="border: 1px solid #cccccc;"
+                    src="https://thingspeak.com/channels/2879932/charts/1?api_key=WHQYZRM6ADH8DN67&bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=60&title=Energy+consumption%28%25%29&type=line&xaxis=Time&yaxis=10%5E-9&update=15\"></iframe>
+            </div>
+
+            <div class="chart-container">
+                <h3>Solar Panel Charging Capacity</h3>
+                <iframe width="100%" height="260" style="border: 1px solid #cccccc;"
+                    src="https://thingspeak.com/channels/2879932/charts/2?api_key=WHQYZRM6ADH8DN67&bgcolor=%23ffffff&color=%23d62020&dynamic=true&results=60&title=Energy+addition%28%25%29&type=line&xaxis=Time&yaxis=10%5E-13&update=15\"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.getElementById('fetchData').addEventListener('click', function() {
-            const apiKey = '9SF7LP76OOJNHX9Z'; // Replace with your ThingSpeak Read API Key
-            const channelID = '2843061'; // Replace with your ThingSpeak Channel ID
-            const url = `https://api.thingspeak.com/channels/2843061/feeds.json?results=1`;
+        let balance = 0.0;
+        let currentPredictedPrice = 0;
+        let currentAction = ''; // 'buy' or 'sell'
 
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+
+            // Refresh iframes when switching to data tab
+            if (id === 'data') {
+                setTimeout(() => {
+                    document.querySelectorAll('iframe').forEach(iframe => {
+                        iframe.src = iframe.src;
+                    });
+                }, 100);
+            }
+        }
+
+        function calculateBuyPrice() {
+            const energyValue = parseFloat(document.getElementById('Buy').value);
+            if (isNaN(energyValue) || energyValue < 0) {
+                alert("Please enter a valid energy value");
+                return;
+            }
+
+            // Calculate price: 518400 * (energyValue/100) / 3600 / 1000 * 10
+            currentPredictedPrice = (518400 * (energyValue/100) / 3600 / 1000 * 1.85).toFixed(2);
+            document.getElementById('predictedPrice').textContent = currentPredictedPrice;
+            
+            // Check if balance is sufficient
+            const balanceError = document.getElementById('balanceError');
+            if (balance < parseFloat(currentPredictedPrice)) {
+                balanceError.style.display = 'block';
+                document.getElementById('confirmBuyBtn').disabled = true;
+            } else {
+                balanceError.style.display = 'none';
+                document.getElementById('confirmBuyBtn').disabled = false;
+            }
+            
+            currentAction = 'buy';
+        }
+
+        function calculateSellPrice() {
+            const energyValue = parseFloat(document.getElementById('Sell').value);
+            if (isNaN(energyValue) || energyValue < 1) {
+                alert("Please enter a valid energy value");
+                return;
+            }
+
+            // Calculate price: 518400 * (energyValue/100) / 3600 / 1000 * 5
+            currentPredictedPrice = (518400 * (energyValue/100) / 3600 / 1000 * 1.8).toFixed(2);
+            document.getElementById('predictedPrice').textContent = currentPredictedPrice;
+            document.getElementById('confirmSellBtn').disabled = false;
+            document.getElementById('balanceError').style.display = 'none';
+            currentAction = 'sell';
+        }
+
+        function confirmBuyEnergy() {
+            const energyValue = document.getElementById('Buy').value;
+            if (!energyValue || isNaN(energyValue)) {
+                alert("Please enter a valid energy value");
+                return;
+            }
+
+            // Double-check balance (in case it changed since calculation)
+            if (balance < parseFloat(currentPredictedPrice)) {
+                alert("Your balance is insufficient for this transaction");
+                return;
+            }
+
+            const apiKey = '1T45D45AEYPFBPKV';
+            const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field3=${energyValue}`;
+
+            sendToThingSpeak(url, "Buy");
+            
+            // Update balance
+            balance -= parseFloat(currentPredictedPrice);
+            updateDisplay();
+            
+            // Reset UI
+            document.getElementById('confirmBuyBtn').disabled = true;
+            document.getElementById('Buy').value = '';
+            document.getElementById('predictedPrice').textContent = '0.00';
+            document.getElementById('balanceError').style.display = 'none';
+            
+            alert("Energy is confirmed to be bought!");
+        }
+
+        function confirmSellEnergy() {
+            const energyValue = document.getElementById('Sell').value;
+            if (!energyValue || isNaN(energyValue)) {
+                alert("Please enter a valid energy value");
+                return;
+            }
+
+            const apiKey = '1T45D45AEYPFBPKV';
+            const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field4=${energyValue}`;
+
+            sendToThingSpeak(url, "Sell");
+            
+            // Update balance
+            balance += parseFloat(currentPredictedPrice);
+            updateDisplay();
+            
+            // Reset UI
+            document.getElementById('confirmSellBtn').disabled = true;
+            document.getElementById('Sell').value = '';
+            document.getElementById('predictedPrice').textContent = '0.00';
+            
+            alert("Energy is confirmed to be sold!");
+        }
+
+        function sendToThingSpeak(url, action) {
             fetch(url)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                    if (response.ok) {
+                        return response.text(); 
+                    } else {
+                        throw new Error('Error sending data: ' + response.status);
                     }
-                    return response.json();
                 })
                 .then(data => {
-                    const feed = data.feeds[0];
-                    const result = feed ? `Field 1: ${feed.field1}, Field 2: ${feed.field2}` : 'No data available';
-                    document.getElementById('data').innerText = result;
-                    fetch('/execute')
-                        .then(response => response.text())
-                        .then(message => {
-                    console.log(message); // Log Arduino response
-                });
+                    console.log('Data sent to ThingSpeak successfully! Response: ' + data);
+                    fetch('/submit?action=' + action.toLowerCase()) 
+                        .then(res => {
+                            if (res.ok) {
+                                console.log('Arduino function triggered successfully.');
+                            } else {
+                                console.error('Error triggering Arduino function.');
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
                 })
                 .catch(error => {
-                    document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
+                    console.error('Error:', error);
+                    alert('There was an error: ' + error.message);
                 });
-        });
-    </script>
+        }
 
+        function depositMoney() {
+            const amount = parseFloat(document.getElementById("deposit").value);
+            if (!isNaN(amount) && amount > 0) {
+                balance += amount;
+                updateDisplay();
+                document.getElementById("deposit").value = '';
+                
+                // If we were showing balance error, check if deposit fixed it
+                if (document.getElementById('balanceError').style.display === 'block') {
+                    calculateBuyPrice(); // Re-run the calculation to update button state
+                }
+            } else {
+                alert("Enter a valid deposit amount.");
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById("balance").textContent = balance.toFixed(2);
+        }
+
+        updateDisplay();
+    </script>
 </body>
 </html>
